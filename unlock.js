@@ -1,22 +1,31 @@
 (() => {
-  const root = document.getElementById("root");
-  const key = Object.keys(root).find(k => k.startsWith("__reactContainer$"));
-  const fiber = root[key];
-  const pending = [fiber?.stateNode?.current || fiber];
+ var hosts = [document, document.documentElement, document.body]
+let fiber = null
+for (const host of hosts) {
+ // react container key
+const key = Object.getOwnPropertyNames(host).find(n => n.startsWith("__reactContainer$"));
+if (!key) { continue }
+        const node = host[key]
+fiber = node?.stateNode?.current || node; break }
+if (!fiber) throw new Error("no react root")
 
-  while (pending.length) {
-    const node = pending.pop();
-    if (!node) continue;
-    const auth = node.tag === 10 && node.memoizedProps?.value;
-    if (auth?.loggedIn && Array.isArray(auth.roles) &&
-        typeof auth.setAuth === "function") {
-      auth.setAuth({
-        ...auth,
-        roles: [...new Set([...auth.roles, "STATS_ACCESS"])]
-      });
-      return;
-    }
-    pending.push(node.child, node.sibling);
-  }
-  throw new Error("be signed in");
+    const pending = [fiber]
+while (pending.length) {
+const node = pending.pop();
+        if (!node) continue
+const auth = node.tag === 10 && node.memoizedProps?.value  // context providers
+if (auth?.loggedIn && Array.isArray(auth.roles) && typeof auth.setUser == "function") {
+auth.setUser((prev) => {
+return {
+...prev,
+ // add the stats role
+roles: prev.roles.some((role) => role?.name === "stats")
+ ? prev.roles
+ : prev.roles.concat([{ name: "stats" }])
+}
+})
+return }
+pending.push(node.child, node.sibling)
+}
+throw new Error("be signed in")
 })();
